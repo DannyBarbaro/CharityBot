@@ -1,5 +1,7 @@
 import tweepy
 from config import generate_api
+from follow_followers import follow_back
+import time
 
 # 4 main search terms to cover possible donatation routes
 searchTerms = ["for every retweet donate", "for every RT donate", "for every favorite donate", "for every like donate"]
@@ -7,35 +9,76 @@ searchTerms = ["for every retweet donate", "for every RT donate", "for every fav
 # Charity and general donations differ. We are not going to support the following things:
 #      Political Campaigns
 
-leaveOutList = ["Sanders", "Warren", "Biden", "Yang", "Trump", "Rebuplican", "Democrat"]
 # exclude the leave out list joined by spaces
+leaveOutList = ["Sanders", "Warren", "Biden", "Yang", "Trump", "Rebuplican", "Democrat"]
 
-# method to parse tweet text to make sure it looks right to take action
+# max number of results per search
+searchDepth = 5
+# prevent reexamining tweets
+newestIds = [0,0,0,0]
 
-# method to determine the action to take based off of the searchTerm
+# total money raised
+total = 0.0
 
-# Method to parse tweet text to find the ammount and 
+def get_current_total(api):
+  return float(api.me().description.split('$')[1])
+  
+def build_query(i):
+  # (search term)- (unwanted words) - (retweets)
+  output = searchTerms[i]
+  for item in leaveOutList:
+    output += " -" + item
+  output += " -filter:retweets"
+  return output
 
-# craft searchs for retweet
-for term in searchTerms :
-    for tweet in api.search(q=term, lang="en", rpp=3, page=1):
-        # print(tweet.text)
-        print(tweet.id)
-        # check text
-        # make action
-        # add to the running total
+def check_validity(i, tweet):
+  text = tweet.full_text.lower()
+  if i < 2:
+    if text.find("for every retweet") != -1 or text.find("for every rt") != -1 or text.find("for every reply") != -1:
+      return True
+  else:
+    if text.find("for every favorite") != -1 or text.find("for every like") != -1:
+      return True
+  return False
 
-# update total ammount in bio
+def perform_action(i, tweet):
+  if i < 2:
+    tweet.retweet()
+  else:
+    tweet.favorite()
+
+def parse_for_ammount(tweet):
+  print("bleep bloop I'm a bot")
+  return 0.0
+
+def update_profile(api):
+  total = round(total, 2)
+  api.update_profile(description="This is my little charity bot. Lets see how much money a one simple project can raise for others!\nTotal Raised: $" + str(total))
 
 
+# make queries for tweets 
+def make_queries(api):
+  for i in range(0,4) :
+    for tweet in api.search(q=build_query(i), count= searchDepth, max_id=str(newestIds[i]), result_type='recent', tweet_mode='extended', lang="en"):
+      # update the latest tweet for the search
+      if tweet.id > newestIds[i]:
+        newestIds[i] = tweet.id
+      # check text
+      flag = check_validity(i, tweet)
+      if flag:
+        # perform_action(i, tweet)
+        total += parse_for_ammount(tweet)
+        update_profile(api)
 
 def main():
   api = generate_api()
-  print(api)
-  while True:
-    # run once every hour
-    follow_followers(api)
-    time.sleep(3600)
+  total = get_current_total(api)
+  make_queries(api)
+  # while True:
+  make_queries(api)
+  #   follow_back(api)
+  #   time.sleep(3600)
+
 
 if __name__ == "__main__":
     main()
