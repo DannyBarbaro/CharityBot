@@ -1,2 +1,5 @@
 api-keys.txt
-/__pycache__
+bots/__pycache__
+/charity-bot.tar.gz
+/charity_bot_key.pem
+/ubuntu@ec2-3-19-61-131.us-east-2.compute.amazonaws.com

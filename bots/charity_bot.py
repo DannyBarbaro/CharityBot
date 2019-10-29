@@ -84,8 +84,11 @@ def parse_for_ammount(tweet, index):
       else: #case for $
         i = tweet.full_text.find(item)
         price_dict[i] = price.amount_float
-  needed_key = min(price_dict.keys(), key=lambda x:abs(x-index))
-  return price_dict[needed_key]
+  if len(price_dict.keys()) > 0:
+    needed_key = min(price_dict.keys(), key=lambda x:abs(x-index))
+    return price_dict[needed_key]
+  else:
+    return 0
 
 def update_profile(api):
   global total
